@@ -62,7 +62,7 @@ class LenetCNN(object):
         self.input = input
 
 def evaluate_lenet5(learning_rate = 0.1, n_epochs = 200,
-                    dataset = 'mnist.pkl.gz',
+                    dataset = './Tutorial/mnist.pkl.gz',
                     nkerns = [20, 50], batch_size = 500):
     """ Demonstrates lenet on MNIST dataset """
     rng = np.random.RandomState(23455)
