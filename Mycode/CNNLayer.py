@@ -18,23 +18,28 @@ class CNNLayer:
         self.FilterShape = filterShape
         self.PoolingShape = poolingShape
 
-        # Calculate filters size
-
-
         # Create filter
-        self.filters = theano.shared(
+        self.W = theano.shared(
             numpy.asarray(
-                rng.uniform(low = ..., high = ..., size = self.FilterShape),
+                rng.uniform(low = -1.0, high = 1.0, size = self.FilterShape),
                 dtype = theano.config.floatX
             ),
             borrow = True
         )
 
+        self.b = theano.shared(
+            numpy.asarray(
+                rng.uniform(low = -1.0, high = 1.0, size = self.FilterShape[0]),
+                dtype=theano.config.floatX
+            ),
+            borrow = True
+        )
+
         # Create convolution layer
-        outputConv = convLayer = conv2d(
+        outputConv = conv2d(
             input = self.Input,
             input_shape = self.InputShape,
-            filters = ,
+            filters = self.W,
             filter_shape = self.FilterShape
         )
 
@@ -45,7 +50,7 @@ class CNNLayer:
             ignore_border = True
         )
 
-        self.Output = theano.tensor.tanh(poolOut + )
+        self.Output = theano.tensor.tanh(poolOut + self.b.dimshuffle('x', 0, 'x', 'x'))
 
         self.Params = [self.W, self.b]
 
