@@ -40,5 +40,5 @@ class HiddenLayer:
 
         self.Output = self.Activation(T.dot(self.W, self.Input) + self.b)
 
-        self.params = [self.W, self.b]
+        self.Params = [self.W, self.b]
 
