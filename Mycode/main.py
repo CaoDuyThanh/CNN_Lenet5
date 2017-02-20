@@ -4,10 +4,15 @@ import numpy
 from LogisticSGD import LogisticRegression, LoadData
 from CNNLayer import CNNLayer
 from HiddenLayer import HiddenLayer
+from SoftmaxLayer import SoftmaxLayer
 
 def evaluateLenet5(datasetName = 'minist.pkl.gz',
+                   learningRate = 0.005,
                    batchSize = 500,
                    nEpochs = 200):
+    x = T.matrix('x')
+    y = T.ivector('y')
+
     # Random state
     rng = numpy.random.RandomState(22323);
 
@@ -54,28 +59,59 @@ def evaluateLenet5(datasetName = 'minist.pkl.gz',
     # Create third layer - Fully Connected
     layer2 = HiddenLayer(
         rng = rng,
-        input = ?,
-        numNeurons = ?,
-        numOut = ?,
+        input = layer1Output,
+        numOut = 120,
         activaion = T.tanh
     )
+    layer2Output = layer2.Ouput
 
     # Create forth layer - Fully Connected
     layer3 = HiddenLayer(
-
+        rng = rng,
+        input = layer2Output,
+        numOut = 84,
+        activation = T.tanh
     )
+    layer3Output = layer3.Ouput
 
-    # Create fifth layer = Gaussian Connection
-    layer4 = GaussLayer(
-
+    # Create fifth layer = Fully Connected
+    layer4 = HiddenLayer(
+        rng = rng,
+        input = layer3Output,
+        numOut = 10,
+        activation = T.tanh
     )
+    layer4Output = layer4.Output
+
+    # Create softmax layer
+    layerSoftmax = SoftmaxLayer(
+        input = layer4Output
+    )
+    output = layerSoftmax.Output
 
     # Calculate cost function
+    cost = -T.mean(T.log(output)[T.arange(y.shape[0]), y])
 
+    # Gradient
+    params = layer0.Params + layer1.Params + layer2.Params + layer3.Params + layer4.Params + layerSoftmax.Params
+    grads = T.grad(cost, params)
+
+    # Update
+    updates = [
+        (param_i, param_i - learningRate * grad_i)
+        for param_i, grad_i in zip(params, grads)
+    ]
 
     # Create train model
+    index = T.lscalar()
     trainModel = theano.function(
-
+        [index],
+        cost,
+        updates = updates,
+        givens = {
+            x: trainSetX[index * batchSize : (index + 1) * batchSize],
+            y: trainSetY[index * batchSize : (index + 1) * batchSize]
+        }
     )
 
     # Create valid model
@@ -92,6 +128,9 @@ def evaluateLenet5(datasetName = 'minist.pkl.gz',
 
     # Train model
     print ('Training the model...')
+    epoch = 0
+    while (epoch < nEpochs):
+        epoch += 1
 
 
     # Gradient descent
