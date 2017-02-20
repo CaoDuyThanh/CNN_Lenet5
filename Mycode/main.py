@@ -6,33 +6,50 @@ from CNNLayer import CNNLayer
 from HiddenLayer import HiddenLayer
 from SoftmaxLayer import SoftmaxLayer
 
-def evaluateLenet5(datasetName = 'minist.pkl.gz',
+def padData(sharedData):
+    data = sharedData.get_value()
+    numSamples = data.shape[0]
+    data = data.reshape((numSamples, 28, 28))
+
+    newData = numpy.zeros((numSamples, 32, 32))
+    newData[:, 2 : 30, 2 : 30] = data
+    newData = newData.reshape((numSamples, 32 * 32))
+    return theano.shared(
+        numpy.asarray(
+            newData,
+            dtype = theano.config.floatX
+        ),
+        borrow = True
+    )
+
+def evaluateLenet5(datasetName = 'mnist.pkl.gz',
                    learningRate = 0.005,
                    batchSize = 500,
                    nEpochs = 200):
-    x = T.matrix('x')
-    y = T.ivector('y')
-
     # Random state
     rng = numpy.random.RandomState(22323);
 
     # Read data
     datasets = LoadData(datasetName)
-    trainSetX, trainSetY = datasets[0]
-    validSetX, validSetY = datasets[1]
-    testSetX, testSetY = datasets[2]
 
-    nTrainBatches = trainSetX.get_value(borrow=True).shape[0]
-    nValidBatches = validSetX.get_value(borrwo=True).shape[0]
-    nTestBatches = testSetX.get_value(borrow=True).shape[0]
+    trainSetX, trainSetY = datasets[0]
+    trainSetX = padData(trainSetX)
+    validSetX, validSetY = datasets[1]
+    validSetX = padData(validSetX)
+    testSetX, testSetY = datasets[2]
+    testSetX = padData(testSetX)
+
+    nTrainBatches = trainSetX.get_value(borrow = True).shape[0]
+    nValidBatches = validSetX.get_value(borrow = True).shape[0]
+    nTestBatches = testSetX.get_value(borrow = True).shape[0]
 
     nTrainBatches //= batchSize
     nValidBatches //= batchSize
     nTestBatches //= batchSize
 
     # Create model
-    X = T.matrix('X', dtype = theano.config.floatX)
-    Y = T.vector('Y', dtype = theano.config.floatX)
+    X = T.matrix('X')
+    Y = T.ivector('Y')
 
     print ('Building the model...')
     nkerns = [[6, 5, 5],
@@ -51,7 +68,7 @@ def evaluateLenet5(datasetName = 'minist.pkl.gz',
     layer1 = CNNLayer(
         rng = rng,
         input = layer0.Output,
-        inputShape = (batchSize, nkerns[0][0], layer0.Output.shape[2], layer0.Output.shape[3]),
+        inputShape = (batchSize, nkerns[0][0], 14, 14),
         filterShape = (nkerns[1][0], nkerns[0][0], nkerns[1][1], nkerns[1][2])
     )
     layer1Output = layer1.Output.flatten(2)
@@ -60,24 +77,27 @@ def evaluateLenet5(datasetName = 'minist.pkl.gz',
     layer2 = HiddenLayer(
         rng = rng,
         input = layer1Output,
+        numIn = 400,
         numOut = 120,
-        activaion = T.tanh
+        activation = T.tanh
     )
-    layer2Output = layer2.Ouput
+    layer2Output = layer2.Output
 
     # Create forth layer - Fully Connected
     layer3 = HiddenLayer(
         rng = rng,
         input = layer2Output,
+        numIn = 120,
         numOut = 84,
         activation = T.tanh
     )
-    layer3Output = layer3.Ouput
+    layer3Output = layer3.Output
 
     # Create fifth layer = Fully Connected
     layer4 = HiddenLayer(
         rng = rng,
         input = layer3Output,
+        numIn = 84,
         numOut = 10,
         activation = T.tanh
     )
@@ -90,10 +110,10 @@ def evaluateLenet5(datasetName = 'minist.pkl.gz',
     output = layerSoftmax.Output
 
     # Calculate cost function
-    cost = -T.mean(T.log(output)[T.arange(y.shape[0]), y])
+    cost = -T.mean(T.log(output)[T.arange(Y.shape[0]), Y])
 
     # Gradient
-    params = layer0.Params + layer1.Params + layer2.Params + layer3.Params + layer4.Params + layerSoftmax.Params
+    params = layerSoftmax.Params + layer4.Params + layer3.Params + layer2.Params + layer1.Params + layer0.Params
     grads = T.grad(cost, params)
 
     # Update
@@ -109,8 +129,8 @@ def evaluateLenet5(datasetName = 'minist.pkl.gz',
         cost,
         updates = updates,
         givens = {
-            x: trainSetX[index * batchSize : (index + 1) * batchSize],
-            y: trainSetY[index * batchSize : (index + 1) * batchSize]
+            X: trainSetX[index * batchSize : (index + 1) * batchSize],
+            Y: trainSetY[index * batchSize : (index + 1) * batchSize]
         }
     )
 
@@ -131,9 +151,17 @@ def evaluateLenet5(datasetName = 'minist.pkl.gz',
     epoch = 0
     while (epoch < nEpochs):
         epoch += 1
+        for minibatchIndex in range(nTrainBatches):
+            iter = (epoch - 1) * nTrainBatches + minibatchIndex
 
+            if iter % 100 == 0:
+                print ('Training %i iter = ', iter)
 
-    # Gradient descent
+            costIJ = trainModel(minibatchIndex)
+
+            print costIJ
+
+        # Gradient descent
 
 
     print ('Training the model...Done')
