@@ -38,7 +38,7 @@ class HiddenLayer:
             borrow = True
         )
 
-        self.Output = self.Activation(T.dot(self.W, self.Input) + self.b)
+        self.Output = self.Activation(T.dot(self.Input, self.W) + self.b)
 
         self.Params = [self.W, self.b]
 
