@@ -113,7 +113,7 @@ def evaluateLenet5(datasetName = 'mnist.pkl.gz',
     cost = -T.mean(T.log(output)[T.arange(Y.shape[0]), Y])
 
     # Gradient
-    params = layerSoftmax.Params + layer4.Params + layer3.Params + layer2.Params + layer1.Params + layer0.Params
+    params = layer4.Params + layer3.Params + layer2.Params + layer1.Params + layer0.Params
     grads = T.grad(cost, params)
 
     # Update
@@ -135,14 +135,14 @@ def evaluateLenet5(datasetName = 'mnist.pkl.gz',
     )
 
     # Create valid model
-    validModel = theano.function(
-
-    )
+    # validModel = theano.function(
+    #
+    # )
 
     # Create test model
-    testModel = theano.function(
-
-    )
+    # testModel = theano.function(
+    #
+    # )
 
     print ('Building the model...Done')
 
@@ -154,12 +154,11 @@ def evaluateLenet5(datasetName = 'mnist.pkl.gz',
         for minibatchIndex in range(nTrainBatches):
             iter = (epoch - 1) * nTrainBatches + minibatchIndex
 
-            if iter % 100 == 0:
-                print ('Training %i iter = ', iter)
-
             costIJ = trainModel(minibatchIndex)
 
-            print costIJ
+            if iter % 100 == 0:
+                print ('Training %i iter = ', iter)
+                print costIJ
 
         # Gradient descent
 
