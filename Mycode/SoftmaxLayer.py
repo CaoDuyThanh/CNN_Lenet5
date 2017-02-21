@@ -7,5 +7,3 @@ class SoftmaxLayer:
 
         # Create layer
         self.Output = softmax(self.Input)
-
-        self.Params = [self.Input]
