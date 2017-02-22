@@ -22,10 +22,10 @@ def padData(sharedData):
         borrow = True
     )
 
-def evaluateLenet5(datasetName = 'mnist.pkl.gz',
+def evaluateLenet5(datasetName = '../Dataset/mnist.pkl.gz',
                    learningRate = 0.005,
                    batchSize = 500,
-                   nEpochs = 200):
+                   nEpochs = 2000):
     # Random state
     rng = numpy.random.RandomState(22323);
 
@@ -40,7 +40,7 @@ def evaluateLenet5(datasetName = 'mnist.pkl.gz',
     testSetX = padData(testSetX)
 
     nTrainBatches = trainSetX.get_value(borrow = True).shape[0]
-    nValidBatches = validSetX.get_value(borrow = True).shape[0]
+    nValidBatches = validSetX.get_value( borrow = True).shape[0]
     nTestBatches = testSetX.get_value(borrow = True).shape[0]
 
     nTrainBatches //= batchSize
@@ -134,15 +134,29 @@ def evaluateLenet5(datasetName = 'mnist.pkl.gz',
         }
     )
 
+    # Calculate error function
+    outPred = T.argmax(output, axis = 1);
+    error = T.mean(T.neq(outPred, Y));
+
     # Create valid model
-    # validModel = theano.function(
-    #
-    # )
+    validModel = theano.function(
+        [index],
+        error,
+        givens = {
+            X: validSetX[index * batchSize : (index + 1) * batchSize],
+            Y: validSetY[index * batchSize : (index + 1) * batchSize],
+        }
+    )
 
     # Create test model
-    # testModel = theano.function(
-    #
-    # )
+    testModel = theano.function(
+        [index],
+        error,
+        givens={
+            X: testSetX[index * batchSize: (index + 1) * batchSize],
+            Y: testSetY[index * batchSize: (index + 1) * batchSize],
+        }
+    )
 
     print ('Building the model...Done')
 
@@ -158,7 +172,19 @@ def evaluateLenet5(datasetName = 'mnist.pkl.gz',
 
             if iter % 100 == 0:
                 print ('Training %i iter = ', iter)
-                print costIJ
+
+        # Test model
+        errorValid = 0;
+        for minibatchIndex in range(nValidBatches):
+            errorValid += validModel(minibatchIndex)
+        errorValid /= nValidBatches;
+        print ('Error valid %i = ', errorValid)
+
+        errorTest = 0;
+        for minibatchIndex in range(nTestBatches):
+            errorTest += testModel(minibatchIndex)
+        errorTest /= nTestBatches;
+        print ('Error valid %i = ', errorTest)
 
         # Gradient descent
 
