@@ -9,7 +9,7 @@ from Layers.ConvPoolLayer import *
 
 # Hyper parameters
 DATASET_NAME = '../Dataset/mnist.pkl.gz'
-LEARNING_RATE = 0.01
+LEARNING_RATE = 0.005
 NUM_EPOCH = 1000
 BATCH_SIZE = 20
 PATIENCE = 1000
@@ -17,6 +17,21 @@ PATIENCE_INCREASE = 2
 IMPROVEMENT_THRESHOLD = 0.995
 VALIDATION_FREQUENCY = 500
 
+def padData(sharedData):
+    data = sharedData.get_value()
+    numSamples = data.shape[0]
+    data = data.reshape((numSamples, 28, 28))
+
+    newData = numpy.zeros((numSamples, 32, 32))
+    newData[:, 2 : 30, 2 : 30] = data
+    newData = newData.reshape((numSamples, 32 * 32))
+    return theano.shared(
+        numpy.asarray(
+            newData,
+            dtype = theano.config.floatX
+        ),
+        borrow = True
+    )
 
 def evaluateLenet5():
     # Load datasets from local disk or download from the internet
@@ -24,6 +39,10 @@ def evaluateLenet5():
     trainSetX, trainSetY = datasets[0]
     validSetX, validSetY = datasets[1]
     testSetX, testSetY = datasets[2]
+
+    trainSetX = padData(trainSetX)
+    validSetX = padData(validSetX)
+    testSetX = padData(testSetX)
 
     nTrainBatchs = trainSetX.get_value(borrow=True).shape[0]
     nValidBatchs = validSetX.get_value(borrow=True).shape[0]
@@ -51,13 +70,14 @@ def evaluateLenet5():
 
     # Create shared variable for input
     Index = T.lscalar('Index')
-    X = T.matrix('X', dtype=theano.config.floatX)
+    X = T.matrix('X')
     Y = T.ivector('Y')
 
+    X4D = X.reshape((BATCH_SIZE, 1, 32, 32))
     # Convolution & pooling layer 0
     convPoolLayer0 = ConvPoolLayer(
         rng = rng,
-        input = X,
+        input = X4D,
         inputShape = (BATCH_SIZE, 1, 32, 32),
         filterShape = (6, 1, 5, 5),
 
@@ -74,11 +94,12 @@ def evaluateLenet5():
     )
     convPoolLayer1Output = convPoolLayer1.Output()
     convPoolLayer1Params = convPoolLayer1.Params()
+    convPoolLayer1OutputRes = convPoolLayer1Output.reshape((BATCH_SIZE, 16 * 5 * 5))
 
     # Hidden layer 0
     hidLayer0 = HiddenLayer(
         rng = rng,
-        input = convPoolLayer1Output,
+        input = convPoolLayer1OutputRes,
         numIn = 16 * 5 * 5,
         numOut = 120,
         activation = T.tanh
@@ -100,7 +121,7 @@ def evaluateLenet5():
     # Hidden layer 2
     hidLayer2 = HiddenLayer(
         rng = rng,
-        input = hidLayer0Output,
+        input = hidLayer1Output,
         numIn = 84,
         numOut = 10,
         activation = T.tanh
@@ -115,7 +136,11 @@ def evaluateLenet5():
     softmaxLayer0Output = softmaxLayer0.Output()
 
     # List of params from model
-    params = [hidLayer2Params, hidLayer1Params, hidLayer0Params, convPoolLayer1Params, convPoolLayer0Params]
+    params = hidLayer2Params + \
+             hidLayer1Params + \
+             hidLayer0Params + \
+             convPoolLayer1Params + \
+             convPoolLayer0Params
 
     # Evaluate model - using early stopping
     # Define cost function = Regularization + Cross entropy of softmax
@@ -127,7 +152,7 @@ def evaluateLenet5():
     # Updates function
     updates = [
         (param, param - LEARNING_RATE * grad)
-        for (param, grad) in (params, grads)
+        for (param, grad) in zip(params, grads)
     ]
 
     # Train model
