@@ -34,9 +34,8 @@ def evaluateMLP():
     # Create model
     '''
     MODEL ARCHITECTURE
-    INPUT -> HIDDEN LAYER -> OUTPUT (Softmax + L2 regularization)
-            (IN = 28 x 28
-            OUT = 10)
+    INPUT     ->    HIDDEN LAYER    ->    OUTPUT (Softmax + L2 regularization)
+    (28x28)         (500 neurons)                    (10 neurons)
     '''
     # Create random state
     rng = numpy.random.RandomState(12345)
