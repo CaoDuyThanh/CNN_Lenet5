@@ -22,7 +22,7 @@ class ConvPoolLayer:
         # Create shared parameters for filters
         if W is None:
             self.W = theano.shared(
-                input = numpy.asarray(
+                numpy.asarray(
                     rng.uniform(
                         low = -1.0,
                         high = 1.0,
@@ -30,7 +30,7 @@ class ConvPoolLayer:
                     ),
                     dtype = theano.config.floatX
                 ),
-                borrow = True
+                borrow=True
             )
         else:
             self.W = W
