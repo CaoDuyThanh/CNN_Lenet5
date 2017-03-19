@@ -124,7 +124,7 @@ def evaluateLenet5():
         input = hidLayer1Output,
         numIn = 84,
         numOut = 10,
-        activation = T.tanh
+        activation = None
     )
     hidLayer2Output = hidLayer2.Output()
     hidLayer2Params = hidLayer2.Params()
